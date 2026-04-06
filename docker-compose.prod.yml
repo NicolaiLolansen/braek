@@ -1,0 +1,18 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.braek.rule=Host(`xn--brk-0na.dk`) || Host(`www.xn--brk-0na.dk`)"
+      - "traefik.http.routers.braek.entrypoints=websecure"
+      - "traefik.http.routers.braek.tls.certresolver=letsencrypt"
+      - "traefik.http.services.braek.loadbalancer.server.port=80"
+    networks:
+      - traefik_network
+
+networks:
+  traefik_network:
+    external: true
