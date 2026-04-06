@@ -1,0 +1,5 @@
+node_modules
+dist
+certbot
+.DS_Store
+nginx/default-init.conf
