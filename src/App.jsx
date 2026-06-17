@@ -35,11 +35,22 @@ function migrateLegacy() {
   if (localStorage.getItem('braek_migrated_v3')) return
   try {
     const legacy = localStorage.getItem(LEGACY_KEY)
-    if (legacy && !localStorage.getItem(slotKey(0))) {
-      localStorage.setItem(slotKey(0), legacy)
+    if (legacy) {
+      const legacyData = JSON.parse(legacy)
+      // Only migrate if legacy actually has progress
+      if (legacyData.totalPukes > 0 || legacyData.totalClicks > 0) {
+        const existing = localStorage.getItem(slotKey(0))
+        const existingData = existing ? JSON.parse(existing) : null
+        // Overwrite slot 0 if empty or has less progress than legacy
+        if (!existingData || (legacyData.totalPukes || 0) > (existingData.totalPukes || 0)) {
+          localStorage.setItem(slotKey(0), legacy)
+        }
+      }
     }
     localStorage.setItem('braek_migrated_v3', '1')
-  } catch { /* ignore */ }
+  } catch {
+    localStorage.setItem('braek_migrated_v3', '1')
+  }
 }
 
 function loadSlot(slot) {
