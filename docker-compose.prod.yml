@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.braek.rule=Host(`xn--brk-0na.dk`) || Host(`www.xn--brk-0na.dk`)"
+      - "traefik.http.routers.braek.rule=Host(`xn--brk-zla.dk`) || Host(`www.xn--brk-zla.dk`)"
       - "traefik.http.routers.braek.entrypoints=websecure"
       - "traefik.http.routers.braek.tls.certresolver=letsencrypt"
       - "traefik.http.services.braek.loadbalancer.server.port=80"
