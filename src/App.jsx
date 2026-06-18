@@ -9,6 +9,7 @@ import {
   formatWhole,
   timeToAfford,
 } from './gameData'
+import { audio } from './audio'
 
 /* ═══════════════════════════════════════════════
    Save-slot system (3 slots, backwards-compatible)
@@ -270,6 +271,7 @@ export default function App() {
   const [toasts, setToasts] = useState([])
   const [buyAmount, setBuyAmount] = useState(1)
   const [showShop, setShowShop] = useState(true)
+  const [musicOn, setMusicOn] = useState(() => localStorage.getItem('braek_music') === '1')
 
   const stateRef = useRef(state)
   const effectsRef = useRef(null)
@@ -277,13 +279,21 @@ export default function App() {
   const btnRef = useRef(null)
   const idRef = useRef(0)
   const pukeTimer = useRef(null)
+  const musicStarted = useRef(false)
+  const musicOnRef = useRef(musicOn)
 
-  // Keep ref in sync
+  // Keep refs in sync
   useEffect(() => { stateRef.current = state }, [state])
+  useEffect(() => { musicOnRef.current = musicOn }, [musicOn])
 
   // ── Derived values ──
   const pps = useMemo(() => calcPps(state), [state.buildings, state.upgrades])
   const clickPower = useMemo(() => calcClickPower(state), [state.upgrades, state.buildings])
+
+  // ── Sync music layers with PPS ──
+  useEffect(() => {
+    if (musicStarted.current) audio.updateLayers(pps)
+  }, [pps])
 
   // ── Game tick (time-delta based — no PPS pause during clicks) ──
   useEffect(() => {
@@ -404,6 +414,15 @@ export default function App() {
     // Splats + shockwave (DOM)
     spawnSplats(effectsRef.current, 3 + Math.floor(Math.random() * 4))
     spawnShockwave(effectsRef.current)
+
+    // Music: start on first click if enabled, play click note
+    if (musicOnRef.current && !musicStarted.current) {
+      audio.init()
+      audio.updateLayers(calcPps(stateRef.current))
+      audio.start()
+      musicStarted.current = true
+    }
+    if (musicStarted.current) audio.playClick()
   }, [])
 
   // ── Buy building ──
@@ -441,6 +460,22 @@ export default function App() {
         upgrades: [...prev.upgrades, upgrade.id],
       }
     })
+  }, [])
+
+  // ── Toggle music ──
+  const toggleMusic = useCallback(() => {
+    const next = !musicOnRef.current
+    setMusicOn(next)
+    localStorage.setItem('braek_music', next ? '1' : '0')
+    if (next) {
+      audio.init()
+      audio.updateLayers(calcPps(stateRef.current))
+      audio.start()
+      musicStarted.current = true
+    } else {
+      audio.stop()
+      musicStarted.current = false
+    }
   }, [])
 
   // ── Switch save slot ──
@@ -538,7 +573,7 @@ export default function App() {
       <div className="play-area">
         {/* Header stats */}
         <div className="header">
-          {/* Save slot picker */}
+          {/* Save slot picker + music toggle */}
           <div className="slot-picker">
             {Array.from({ length: SLOT_COUNT }, (_, i) => {
               const preview = getSlotPreview(i)
@@ -553,6 +588,13 @@ export default function App() {
                 </button>
               )
             })}
+            <button
+              className={`music-btn${musicOn ? ' active' : ''}`}
+              onClick={toggleMusic}
+              title={musicOn ? 'Slå musik fra' : 'Slå musik til'}
+            >
+              {musicOn ? '🔊' : '🔇'}
+            </button>
           </div>
 
           <div className="pukes-display">
